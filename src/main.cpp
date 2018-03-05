@@ -3,13 +3,30 @@
 // Author      : Slobodchikov RS
 // Version     :
 // Copyright   : romka rabotaet
-// Description : Hello World in C++, Ansi-style
+// Description : Custom protocol parser
 //============================================================================
 
 #include <iostream>
+#include <thread>
+#include "netw_dump_parser.hpp"
+
 using namespace std;
 
+void t1()
+{
+	cout<<"t1\n";
+	return;
+}
+
 int main() {
-	cout << "lala" << endl; // prints lala
+
+	DumpReader reader("hui");
+
+	thread tt1(t1);
+
+//	tt1.join();
+//
+//	reader.read();
+
 	return 0;
 }
