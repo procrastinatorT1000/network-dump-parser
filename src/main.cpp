@@ -12,21 +12,14 @@
 
 using namespace std;
 
-void t1()
+int main()
 {
-	cout<<"t1\n";
-	return;
-}
+	string fileName = "some_shit";
 
-int main() {
+	thread reader(fileReaderThread, &fileName);
 
-	DumpReader reader("hui");
+	reader.join();
 
-	thread tt1(t1);
-
-//	tt1.join();
-//
-//	reader.read();
 
 	return 0;
 }
