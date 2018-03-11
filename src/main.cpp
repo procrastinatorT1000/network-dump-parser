@@ -20,7 +20,7 @@ typedef struct{
 int main()
 {
 	string fileName = "some_shit";
-	Count writerArg = {.net1 = 8678, .net2 = 10000};
+	Count writerArg = {.net1 = 10, .net2 = 10};
 
 	thread reader(fileReaderThread, &fileName);
 	thread queueWriter(queueWriterThread, &writerArg);
