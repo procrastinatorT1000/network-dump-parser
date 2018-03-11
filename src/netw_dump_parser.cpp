@@ -11,6 +11,8 @@
 #include <memory.h>
 #include <cstdint>
 #include <arpa/inet.h>
+#include <algorithm>
+#include <vector>
 #include "netw_dump_parser.hpp"
 
 using namespace std;
@@ -91,16 +93,44 @@ void fileReaderThread(void *arg)
 
 #pragma pack(push, 1)
 
+struct Net1_Addr_t
+{
+	uint8_t byte[4];
+public:
+	bool operator==(const Net1_Addr_t &other)
+	{
+		return this->byte[0] == other.byte[0]
+				&&this->byte[1] == other.byte[1]
+				&&this->byte[2] == other.byte[2]
+				&&this->byte[3] == other.byte[3];
+	}
+};
+
+struct Net2_Addr_t
+{
+	uint8_t byte[6];
+public:
+	bool operator==(const Net2_Addr_t &other)
+	{
+		return this->byte[0] == other.byte[0]
+				&&this->byte[1] == other.byte[1]
+				&&this->byte[2] == other.byte[2]
+				&&this->byte[3] == other.byte[3]
+			    &&this->byte[4] == other.byte[4]
+				&&this->byte[5] == other.byte[5];
+	}
+};
+
 typedef struct
 {
-	uint8_t src[4];
-	uint8_t dst[4];
+	Net1_Addr_t src;
+	Net1_Addr_t dst;
 }IP_Net_1_t;
 
 typedef struct
 {
-	uint32_t src[6];
-	uint32_t dst[6];
+	Net2_Addr_t src;
+	Net2_Addr_t dst;
 }IP_Net_2_t;
 
 typedef struct
@@ -121,7 +151,7 @@ typedef struct
 typedef struct
 {
 	uint8_t netVer;
-	IP_Net_1_t IPnet1;
+	IP_Net_2_t IPnet2;
 	Proto_Info protoInfo;
 }Net2_Header;
 
@@ -135,7 +165,27 @@ private:
 	uint16_t dataBSize;	/* transport data protocol byte size */
 	uint32_t packCount;	/* NetworkV1 packet counter */
 	uint32_t uniqIPcount;	/* unique IP counter */
+	vector<Net1_Addr_t> uniqIPvect;	/* Contain unique IP addresses */
 
+	int isUniqAddr(Net1_Addr_t addr)
+	{
+		int status = false;
+
+		auto result1 = find(uniqIPvect.begin(), uniqIPvect.end(), addr);
+
+
+		if (result1 != uniqIPvect.end())	/* address isn't unique */
+		{
+//			cout << "v содержит: " <<'\n';
+		}
+		else
+		{
+			status = true;
+			cout << "v не содержит: " <<'\n';
+		}
+
+		return status;
+	}
 
 public:
 	Parser_Net1()
@@ -145,7 +195,7 @@ public:
 		packCount = 0;
 		uniqIPcount = 0;
 	};
-//	~Parser_Net1(){};
+	~Parser_Net1(){};
 
 	int parseHeader(const uint8_t *head, const uint16_t headSize)
 	{
@@ -161,7 +211,17 @@ public:
 		protoType = headerBigEnd.protoInfo.protocol;
 		dataBSize = ntohs(headerBigEnd.protoInfo.dataSize);
 		packCount++;
-		uniqIPcount++;	/* TODO: it's workaround, delete */
+
+		if(isUniqAddr(headerBigEnd.IPnet1.src))
+		{
+			uniqIPcount++;
+			uniqIPvect.push_back(headerBigEnd.IPnet1.src);//save unique addr
+		}
+		if(isUniqAddr(headerBigEnd.IPnet1.dst))
+		{
+			uniqIPcount++;
+			uniqIPvect.push_back(headerBigEnd.IPnet1.dst);//save unique addr
+		}
 
 		return true;
 	};
@@ -190,7 +250,27 @@ private:
 	uint16_t dataBSize;	/* transport data protocol byte size */
 	uint32_t packCount;	/* NetworkV1 packet counter */
 	uint32_t uniqIPcount;	/* unique IP counter */
+	vector<Net2_Addr_t> uniqIPvect;	/* Contain unique IP addresses */
 
+	int isUniqAddr(Net2_Addr_t addr)
+	{
+		int status = false;
+
+		auto result1 = find(uniqIPvect.begin(), uniqIPvect.end(), addr);
+
+
+		if (result1 != uniqIPvect.end())	/* address isn't unique */
+		{
+//			cout << "v содержит: " <<'\n';
+		}
+		else
+		{
+			status = true;
+			cout << "v не содержит: " <<'\n';
+		}
+
+		return status;
+	}
 
 public:
 	Parser_Net2()
@@ -200,8 +280,7 @@ public:
 		packCount = 0;
 		uniqIPcount = 0;
 	};
-//	~Parser_Net2()
-//	{};
+	~Parser_Net2(){};
 
 	int parseHeader(const uint8_t *head, const uint16_t headSize)
 	{
@@ -217,7 +296,17 @@ public:
 		protoType = headerBigEnd.protoInfo.protocol;
 		dataBSize = ntohs(headerBigEnd.protoInfo.dataSize);
 		packCount++;
-		uniqIPcount++;	/* TODO: it's workaround, delete */
+
+		if(isUniqAddr(headerBigEnd.IPnet2.src))
+		{
+			uniqIPcount++;
+			uniqIPvect.push_back(headerBigEnd.IPnet2.src);//save unique addr
+		}
+		if(isUniqAddr(headerBigEnd.IPnet2.dst))
+		{
+			uniqIPcount++;
+			uniqIPvect.push_back(headerBigEnd.IPnet2.dst);//save unique addr
+		}
 
 		return true;
 	};
@@ -282,7 +371,7 @@ void queueWriterThread(void *arg)
 	Net2_Header net2;
 
 	net2.netVer = 2;
-	net2.IPnet1 = {0x12, 0x34, 0x56, 0x78, 0x90, 0x12};
+	net2.IPnet2 = {0x12, 0x34, 0x56, 0x78, 0x90, 0x12};
 	net2.protoInfo.dataSize = 1;
 	net2.protoInfo.headCRC = 0x5555;
 	net2.protoInfo.protocol = 1;
