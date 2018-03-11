@@ -8,22 +8,9 @@
 #ifndef NETW_DUMP_PARSER_HPP_
 #define NETW_DUMP_PARSER_HPP_
 
-#include <fstream>
-#include <iostream>
-#include <stdint.h>
 
-using namespace std;
-
-class DumpReader
-{
-	ifstream dump_file;
-
-public:
-	DumpReader(string fileName); /* open file and save file descriptor */
-	~DumpReader();	/* close file and free memory */
-	size_t read(uint8_t *bufPtr, size_t bufSize);
-};
-
+void queueWriterThread(void *arg);
+void dataParserThread(void *arg);
 void fileReaderThread(void *arg);
 
 #endif /* NETW_DUMP_PARSER_HPP_ */

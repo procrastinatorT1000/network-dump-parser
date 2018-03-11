@@ -12,13 +12,23 @@
 
 using namespace std;
 
+typedef struct{
+	int net1;
+	int net2;
+}Count;
+
 int main()
 {
 	string fileName = "some_shit";
+	Count writerArg = {.net1 = 8678, .net2 = 10000};
 
 	thread reader(fileReaderThread, &fileName);
+	thread queueWriter(queueWriterThread, &writerArg);
+	thread parser(dataParserThread, &fileName);
 
 	reader.join();
+	queueWriter.join();
+	parser.join();
 
 
 	return 0;
