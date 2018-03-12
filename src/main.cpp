@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 	}
 
 	string fileName = argv[1];
-//	Count writerArg = {.net1 = 10, .net2 = 10};
+	Count writerArg = {.net1 = 8678, .net2 = 10000};
 
 	cout<<"Parsing dump: "<<fileName<<"\n";
 

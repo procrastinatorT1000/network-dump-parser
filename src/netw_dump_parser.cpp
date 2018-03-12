@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <vector>
 #include <atomic>
+#include <mutex>
 #include "netw_dump_parser.hpp"
 
 using namespace std;
@@ -465,6 +466,8 @@ public:
 static atomic<bool> isReaderFinished(false);	/* parser thread terminating flag */
 static const size_t portionBSize = 0xFFFF + sizeof(Net2_Header); /* every iteration reader trying to read this byte len */
 /* portionBSize is maximum available size of net protocol packet */
+mutex queueMut;
+
 
 void fileReaderThread(void *arg)
 {
@@ -475,7 +478,11 @@ void fileReaderThread(void *arg)
 
 	while(1)
 	{
-		size_t queueSize = byteStream.size();
+		size_t queueSize = 0;
+		{
+			unique_lock<mutex> lock(queueMut);
+			queueSize = byteStream.size();
+		}
 
 		if(queueSize < portionBSize)
 		{
@@ -487,9 +494,12 @@ void fileReaderThread(void *arg)
 				break;	/* nothing to read or file don't exists */
 			}
 
-			for(size_t i = 0; i < byteLen; i++)
 			{
-				byteStream.push(fileReadBuf[i]);	/* transmit data to parser thread */
+				unique_lock<mutex> lock(queueMut);
+				for(size_t i = 0; i < byteLen; i++)
+				{
+					byteStream.push(fileReadBuf[i]);	/* transmit data to parser thread */
+				}
 			}
 		}
 	}
@@ -503,6 +513,7 @@ void fileReaderThread(void *arg)
  * false if queue don't contain byteNum elements */
 int readDataFromQueue(uint8_t *buf, size_t byteNum)
 {
+	unique_lock<mutex> lock(queueMut);
 	if(byteStream.size()>= byteNum)
 	{
 		for(size_t i = 0; i < byteNum; i++)
@@ -549,6 +560,8 @@ void writePackToQueue(uint8_t *byte, size_t byteNum, int repeatNum)
 		}
 	}
 }
+
+static atomic<bool> isWriterFinished(false);	/* parser thread terminating flag */
 
 void queueWriterThread(void *arg)
 {
@@ -667,28 +680,29 @@ void queueWriterThread(void *arg)
 	byte = (uint8_t*)&Pack1;
 	int byteCounter = sizeof(Pack1)*count.net1;
 
-	writePackToQueue(byte, sizeof(Pack1), count.net1);
+//	writePackToQueue(byte, sizeof(Pack1), count.net1);
 	writePackToFile(byte, sizeof(Pack1), count.net1);
 
 	byte = (uint8_t*)&Pack2;
 	byteCounter = sizeof(Pack2)*count.net1;
 
-	writePackToQueue(byte, sizeof(Pack2), count.net1);
+//	writePackToQueue(byte, sizeof(Pack2), count.net1);
 	writePackToFile(byte, sizeof(Pack2), count.net1);
 
 	byte = (uint8_t*)&Pack3;
 	byteCounter = sizeof(Pack3)*count.net2;
 
-	writePackToQueue(byte, sizeof(Pack3), count.net2);
+//	writePackToQueue(byte, sizeof(Pack3), count.net2);
 	writePackToFile(byte, sizeof(Pack3), count.net2);
 
 	byte = (uint8_t*)&Pack4;
 	byteCounter = sizeof(Pack4)*count.net2;
 
-	writePackToQueue(byte, sizeof(Pack4), count.net2);
+//	writePackToQueue(byte, sizeof(Pack4), count.net2);
 	writePackToFile(byte, sizeof(Pack4), count.net2);
 
 	cout<<"Wrote "<<byteCounter<<"bytes\n";
+	isWriterFinished = true;
 }
 
 #define NETWORK_V1	0x01
@@ -761,7 +775,7 @@ void dataParserThread(void)
 		}
 		else
 		{
-			if(byteStream.empty() && isReaderFinished) /* dump parsing finished */
+			if(byteStream.empty() && (isReaderFinished || isWriterFinished)) /* dump parsing finished */
 				break;
 		}
 	}
