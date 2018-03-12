@@ -697,7 +697,7 @@ void queueWriterThread(void *arg)
 #define TRANS_V2	0x02
 
 
-void dataParserThread(void *arg)
+void dataParserThread(void)
 {
 	Parser_Net1 parserNet1;
 	Parser_Net2 parserNet2;

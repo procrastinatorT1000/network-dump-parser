@@ -10,7 +10,7 @@
 
 
 void queueWriterThread(void *arg);
-void dataParserThread(void *arg);
+void dataParserThread(void);
 void fileReaderThread(void *arg);
 
 #endif /* NETW_DUMP_PARSER_HPP_ */

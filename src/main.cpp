@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 
 	thread reader(fileReaderThread, &fileName);
 //	thread queueWriter(queueWriterThread, &writerArg);
-	thread parser(dataParserThread, &fileName);
+	thread parser(dataParserThread);
 
 	reader.join();
 //	queueWriter.join();
