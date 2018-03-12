@@ -241,7 +241,7 @@ class Parser_Net2
 private:
 	uint8_t transProtoType;	/* transport protocol type V1 V2 */
 	uint16_t transDataBSize;	/* transport data protocol byte size */
-	uint32_t packCount;	/* NetworkV1 packet counter */
+	uint32_t packCount;	/* NetworkV2 packet counter */
 	uint32_t uniqIPcount;	/* unique IP counter */
 	vector<Net2_Addr_t> uniqIPvect;	/* Contain unique IP addresses */
 
@@ -534,6 +534,9 @@ void writePackToFile(uint8_t *byte, size_t byteNum, int repeatNum)
 {
 	ofstream out_file;
 	string ofileName = "my_test_dump.raw";
+	static size_t byteCounter = 0;
+
+	byteCounter += byteNum * repeatNum;
 
 	out_file.open(ofileName, ios_base::out | ios_base::app | ios_base::binary);
 	if(!out_file)
@@ -548,6 +551,8 @@ void writePackToFile(uint8_t *byte, size_t byteNum, int repeatNum)
 	}
 
 	out_file.close();
+
+	cout<<"Wrote "<<byteCounter<<" bytes\n";
 }
 
 void writePackToQueue(uint8_t *byte, size_t byteNum, int repeatNum)
@@ -678,30 +683,25 @@ void queueWriterThread(void *arg)
 	}
 
 	byte = (uint8_t*)&Pack1;
-	int byteCounter = sizeof(Pack1)*count.net1;
 
 //	writePackToQueue(byte, sizeof(Pack1), count.net1);
 	writePackToFile(byte, sizeof(Pack1), count.net1);
 
 	byte = (uint8_t*)&Pack2;
-	byteCounter = sizeof(Pack2)*count.net1;
 
 //	writePackToQueue(byte, sizeof(Pack2), count.net1);
 	writePackToFile(byte, sizeof(Pack2), count.net1);
 
 	byte = (uint8_t*)&Pack3;
-	byteCounter = sizeof(Pack3)*count.net2;
 
 //	writePackToQueue(byte, sizeof(Pack3), count.net2);
 	writePackToFile(byte, sizeof(Pack3), count.net2);
 
 	byte = (uint8_t*)&Pack4;
-	byteCounter = sizeof(Pack4)*count.net2;
 
 //	writePackToQueue(byte, sizeof(Pack4), count.net2);
 	writePackToFile(byte, sizeof(Pack4), count.net2);
 
-	cout<<"Wrote "<<byteCounter<<"bytes\n";
 	isWriterFinished = true;
 }
 
@@ -720,6 +720,8 @@ void dataParserThread(void)
 
 	uint8_t *netHeaderBufPtr = new uint8_t[sizeof(Net2_Header)]; /* Buff for read from queue */
 
+	uint32_t net1counter = 0;
+	uint32_t net2counter = 0;
 
 	while(1)
 	{
@@ -727,12 +729,14 @@ void dataParserThread(void)
 		{
 			if(netHeaderBufPtr[0] == NETWORK_V1)
 			{
-				while(!readDataFromQueue(&netHeaderBufPtr[1], sizeof(Net1_Header) - 1));
+				readDataFromQueue(&netHeaderBufPtr[1], sizeof(Net1_Header) - 1);
 				if(parserNet1.parseHeader(netHeaderBufPtr, sizeof(Net1_Header)))
 				{
 					uint8_t *transPack = new uint8_t[parserNet1.getLastTransBSize()];
 
-					while(!readDataFromQueue(transPack, (size_t) parserNet1.getLastTransBSize()));
+					net1counter++;
+
+					readDataFromQueue(transPack, (size_t) parserNet1.getLastTransBSize());
 					switch(parserNet1.getLastProtoType())
 					{
 					case TRANS_V1:
@@ -748,12 +752,14 @@ void dataParserThread(void)
 			}
 			else if(netHeaderBufPtr[0] == NETWORK_V2)
 			{
-				while(!readDataFromQueue(&netHeaderBufPtr[1], sizeof(Net2_Header) - 1));
+				readDataFromQueue(&netHeaderBufPtr[1], sizeof(Net2_Header) - 1);
 				if(parserNet2.parseHeader(netHeaderBufPtr, sizeof(Net2_Header)))
 				{
 					uint8_t *transPack = new uint8_t[parserNet2.getLastTransBSize()];
 
-					while(!readDataFromQueue(transPack, (size_t) parserNet2.getLastTransBSize()));
+					net2counter++;
+
+					readDataFromQueue(transPack, (size_t) parserNet2.getLastTransBSize());
 					switch(parserNet2.getLastProtoType())
 					{
 					case TRANS_V1:
@@ -786,7 +792,8 @@ void dataParserThread(void)
 	cout<<"TransV1 packCount "<<parserTrans1.getPackCount()<<" uniqPortCount "<<parserTrans1.getUniquePortCount()<<endl;
 	cout<<"TransV2 packCount "<<parserTrans2.getPackCount()<<" uniqPortCount "<<parserTrans2.getUniquePortCount()<<endl;
 
-
+	cout<<"Local counter Net1 "<<net1counter<<"\n";
+	cout<<"Local counter Net2 "<<net2counter<<"\n";
 
 	delete []netHeaderBufPtr;
 }
