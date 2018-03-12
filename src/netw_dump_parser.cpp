@@ -18,7 +18,6 @@
 using namespace std;
 
 queue<uint8_t> byteStream;	/** transport data from reader thread to parser thread */
-static const size_t portionBSize = 1000; /* every iteration reader trying to read this byte len */
 
 /* object which reads data
  * from file, pushes it to std:queue */
@@ -63,32 +62,6 @@ size_t DumpReader::read(uint8_t *bufPtr, size_t bufSize)
 	}
 
 	return readBlen;
-}
-
-void fileReaderThread(void *arg)
-{
-	string fileName = *(string *)arg;
-	DumpReader dump(fileName);
-	uint8_t *fileReadBuf = new uint8_t[portionBSize];
-	size_t byteLen = 0;
-
-	while(1)
-	{
-		byteLen = dump.read(fileReadBuf, portionBSize);
-		if(byteLen == 0)
-		{
-			cout<<"Nothing to read\n";
-			break;	/* nothing to read or file don't exists */
-		}
-
-		for(size_t i = 0; i < byteLen; i++)
-		{
-			byteStream.push(fileReadBuf[i]);	/* transmit data to parser thread */
-		}
-	}
-
-
-	delete []fileReadBuf;
 }
 
 #pragma pack(push, 1)
@@ -489,6 +462,41 @@ public:
 		return uniqPortCount;
 	}
 };
+
+static const size_t portionBSize = 0xFFFF + sizeof(Net2_Header); /* every iteration reader trying to read this byte len */
+/* portionBSize is maximum available size of net protocol packet */
+
+void fileReaderThread(void *arg)
+{
+	string fileName = *(string *)arg;
+	DumpReader dump(fileName);
+	uint8_t *fileReadBuf = new uint8_t[portionBSize];
+	size_t byteLen = 0;
+
+	while(1)
+	{
+		size_t queueSize = byteStream.size();
+
+		if(queueSize < portionBSize)
+		{
+			byteLen = dump.read(fileReadBuf, portionBSize - queueSize);	/* guarantee that queue
+			always contain full Net pack */
+			if(byteLen == 0)
+			{
+				cout<<"Nothing to read\n";
+				break;	/* nothing to read or file don't exists */
+			}
+
+			for(size_t i = 0; i < byteLen; i++)
+			{
+				byteStream.push(fileReadBuf[i]);	/* transmit data to parser thread */
+			}
+		}
+	}
+
+
+	delete []fileReadBuf;
+}
 
 /* returns true if data was read
  * false if queue don't contain byteNum elements */
