@@ -34,7 +34,6 @@ public:
 
 DumpReader::DumpReader(string fileName)
 {
-	cout<<"constr\n";
 	dump_file.open(fileName, ios_base::in | ios_base::binary);
 	if(!dump_file)
 	{
@@ -44,7 +43,6 @@ DumpReader::DumpReader(string fileName)
 
 DumpReader::~DumpReader()
 {
-	cout<<"destr\n";
 	if(dump_file)
 	{
 		dump_file.close();
@@ -53,7 +51,7 @@ DumpReader::~DumpReader()
 
 size_t DumpReader::read(uint8_t *bufPtr, size_t bufSize)
 {
-	cout<<"Read proc\n";
+//	cout<<"Read proc\n";
 
 	size_t readBlen = 0;	/* byte length of data read from file with current iteration */
 
@@ -175,7 +173,7 @@ private:
 		else
 		{
 			status = true;
-			cout << "v не содержит: " <<'\n';
+//			cout << "v не содержит: " <<'\n';
 		}
 
 		return status;
@@ -260,7 +258,7 @@ private:
 		else
 		{
 			status = true;
-			cout << "v не содержит: " <<'\n';
+//			cout << "v не содержит: " <<'\n';
 		}
 
 		return status;
@@ -343,7 +341,7 @@ private:
 		else
 		{
 			status = true;
-			cout << "p не содержит: " <<'\n';
+//			cout << "p не содержит: " <<'\n';
 		}
 
 		return status;
@@ -414,7 +412,7 @@ private:
 		else
 		{
 			status = true;
-			cout << "p не содержит: " <<'\n';
+//			cout << "p не содержит: " <<'\n';
 		}
 
 		return status;
@@ -485,7 +483,7 @@ void fileReaderThread(void *arg)
 			always contain full Net pack */
 			if(byteLen == 0)
 			{
-				cout<<"Nothing to read\n";
+//				cout<<"Nothing to read\n";
 				break;	/* nothing to read or file don't exists */
 			}
 
