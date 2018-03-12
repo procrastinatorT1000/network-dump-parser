@@ -19,15 +19,15 @@ typedef struct{
 
 int main()
 {
-	string fileName = "some_shit";
+	string fileName = "my_test_dump.raw";
 	Count writerArg = {.net1 = 10, .net2 = 10};
 
 	thread reader(fileReaderThread, &fileName);
-	thread queueWriter(queueWriterThread, &writerArg);
+//	thread queueWriter(queueWriterThread, &writerArg);
 	thread parser(dataParserThread, &fileName);
 
 	reader.join();
-	queueWriter.join();
+//	queueWriter.join();
 	parser.join();
 
 

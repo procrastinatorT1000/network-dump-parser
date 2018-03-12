@@ -510,6 +510,36 @@ int readDataFromQueue(uint8_t *buf, size_t byteNum)
 	}
 }
 
+void writePackToFile(uint8_t *byte, size_t byteNum, int repeatNum)
+{
+	ofstream out_file;
+	string ofileName = "my_test_dump.raw";
+
+	out_file.open(ofileName, ios_base::out | ios_base::app | ios_base::binary);
+	if(!out_file)
+	{
+		cout<<"Can't open file "<<ofileName<<"\n";
+		return;
+	}
+
+	for(int j = 0; j < repeatNum; j++)
+	{
+		out_file.write((char*)byte, byteNum);
+	}
+
+	out_file.close();
+}
+
+void writePackToQueue(uint8_t *byte, size_t byteNum, int repeatNum)
+{
+	for(int j = 0; j < repeatNum; j++)
+	{
+		for(size_t i  = 0; i < byteNum; i++)
+		{
+			byteStream.push(byte[i]);
+		}
+	}
+}
 
 void queueWriterThread(void *arg)
 {
@@ -626,44 +656,30 @@ void queueWriterThread(void *arg)
 	}
 
 	byte = (uint8_t*)&Pack1;
+	int byteCounter = sizeof(Pack1)*count.net1;
 
-	for(int j = 0; j < count.net1; j++)
-	{
-		for(size_t i  = 0; i < sizeof(Pack1); i++)
-		{
-			byteStream.push(byte[i]);
-		}
-	}
+	writePackToQueue(byte, sizeof(Pack1), count.net1);
+	writePackToFile(byte, sizeof(Pack1), count.net1);
 
 	byte = (uint8_t*)&Pack2;
+	byteCounter = sizeof(Pack2)*count.net1;
 
-	for(int j = 0; j < count.net1; j++)
-	{
-		for(size_t i  = 0; i < sizeof(Pack2); i++)
-		{
-			byteStream.push(byte[i]);
-		}
-	}
+	writePackToQueue(byte, sizeof(Pack2), count.net1);
+	writePackToFile(byte, sizeof(Pack2), count.net1);
 
 	byte = (uint8_t*)&Pack3;
+	byteCounter = sizeof(Pack3)*count.net2;
 
-	for(int j = 0; j < count.net2; j++)
-	{
-		for(size_t i  = 0; i < sizeof(Pack3); i++)
-		{
-			byteStream.push(byte[i]);
-		}
-	}
+	writePackToQueue(byte, sizeof(Pack3), count.net2);
+	writePackToFile(byte, sizeof(Pack3), count.net2);
 
 	byte = (uint8_t*)&Pack4;
+	byteCounter = sizeof(Pack4)*count.net2;
 
-	for(int j = 0; j < count.net2; j++)
-	{
-		for(size_t i  = 0; i < sizeof(Pack4); i++)
-		{
-			byteStream.push(byte[i]);
-		}
-	}
+	writePackToQueue(byte, sizeof(Pack4), count.net2);
+	writePackToFile(byte, sizeof(Pack4), count.net2);
+
+	cout<<"Wrote "<<byteCounter<<"bytes\n";
 }
 
 #define NETWORK_V1	0x01
@@ -680,7 +696,6 @@ void dataParserThread(void *arg)
 	Parser_Trans2 parserTrans2;
 
 	uint8_t *netHeaderBufPtr = new uint8_t[sizeof(Net2_Header)]; /* Buff for read from queue */
-	int netwDataReady = false;
 
 
 	while(1)
@@ -739,7 +754,7 @@ void dataParserThread(void *arg)
 		{
 			static int counter = 0;
 			counter ++;
-			if(counter > 2000)
+			if(counter > 2000000)
 				break;
 		}
 	}
