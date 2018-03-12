@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <algorithm>
 #include <vector>
+#include <atomic>
 #include "netw_dump_parser.hpp"
 
 using namespace std;
@@ -463,6 +464,7 @@ public:
 	}
 };
 
+static atomic<bool> isReaderFinished(false);	/* parser thread terminating flag */
 static const size_t portionBSize = 0xFFFF + sizeof(Net2_Header); /* every iteration reader trying to read this byte len */
 /* portionBSize is maximum available size of net protocol packet */
 
@@ -494,6 +496,7 @@ void fileReaderThread(void *arg)
 		}
 	}
 
+	isReaderFinished = true;
 
 	delete []fileReadBuf;
 }
@@ -760,9 +763,7 @@ void dataParserThread(void *arg)
 		}
 		else
 		{
-			static int counter = 0;
-			counter ++;
-			if(counter > 2000000)
+			if(byteStream.empty() && isReaderFinished) /* dump parsing finished */
 				break;
 		}
 	}
