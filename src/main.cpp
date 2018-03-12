@@ -17,10 +17,18 @@ typedef struct{
 	int net2;
 }Count;
 
-int main()
+int main(int argc, char* argv[])
 {
-	string fileName = "my_test_dump.raw";
-	Count writerArg = {.net1 = 10, .net2 = 10};
+	if(argc < 2)
+	{
+		cout<<"Specify dump file name as argument\n";
+		return 0;
+	}
+
+	string fileName = argv[1];
+//	Count writerArg = {.net1 = 10, .net2 = 10};
+
+	cout<<"Parsing dump: "<<fileName<<"\n";
 
 	thread reader(fileReaderThread, &fileName);
 //	thread queueWriter(queueWriterThread, &writerArg);
